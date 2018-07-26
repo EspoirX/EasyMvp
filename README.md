@@ -2,7 +2,7 @@
 一个简单强大且灵活的MVP框架。
 
 ## 特点
-- 一个 Activity 可以绑定多个 Presenter，已达到最大的复用功能。
+- 一个 Activity 可以绑定多个 Presenter，以达到最大的复用功能。
 - 采用注解的方式实现依赖注入，减少耦合。
 - 可以灵活管理生命周期。
 
@@ -40,14 +40,14 @@ public class MainActivity extends BaseMvpActivity implements LoginContract.View,
     }
 }
 ```
-假如一个 Activity 中需要同时用到 LoginPresenter 和 RregisterPresenter 中的某些方法，可以看到自需要使用注解
+假如一个 Activity 中需要同时用到 LoginPresenter 和 RregisterPresenter 中的某些方法，可以看到只需要使用注解
 @CreatePresenter 依次传入它们的 class 对象，内部就会自动实例化，并且与 Activity 绑定，非常方便。然后在使用
 的时候，为了区分和调用各自的方法，可以为它们分别定义一个变量 mLoginPresenter 和 mRregisterPresenter，并且
 为它们加上 @PresenterVariable 注解，它们就会各自得到实例化后的对象，就可以直接使用了。
 
 下面来看看这个框架的使用方法吧（以上面代码为例）：
 - . 首先，项目里面一般会有一个 BaseActivity，所以，我们需要先定义一个 BaseMvpActivity，这是使用的第一步。
-1. 这个框架比较关键的类是 PresenterProviders ,它管理着很多东西(在后面原理分析时会讲到)，首先在 onCreate
+这个框架比较关键的类是 PresenterProviders ,它管理着很多东西(在后面原理分析时会讲到)，首先在 onCreate
 方法中，我们先实例化 PresenterProviders：
 
 ```java
@@ -88,4 +88,124 @@ protected void onDestroy() {
 
 调用 detachView 方法解绑。
 
+当我们只需要用到一个 Presenter 的时候，如果还像上面那样定义一个变量加注解的话，有点太麻烦了，所以可以
+定义一个 getPresenter 方法直接获取就可以：
 
+```java
+protected P getPresenter() {
+    return mPresenterProviders.getPresenter(0);
+}
+```
+
+看到其实是调用了 PresenterProviders 提供的 getPresenter 方法，传入的是下标参数，因为只有一个 Presenter,
+所以传 0 就可以了，事实上可以通过这种方式获取到所有 Presenter 实例，因为返回的是 P 泛型，所以 Activity 需要这样写：
+
+```java
+public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
+    ...
+}
+```
+
+- 第二步，编写契约类定义 Presenter 和 View 方法
+
+```java
+public interface LoginContract {
+    interface Presenter<V> extends BaseContract.Presenter<V> {
+        void login();
+    }
+
+    interface View extends BaseContract.View {
+        void loginSuccess();
+    }
+}
+```
+定义的 Presenter 和 View 接口必须要继承 BaseContract.Presenter 和 BaseContract.View，因为 Presenter
+还需要和对应的 View 绑定，所以定义的时候还需要像上面一样定义个泛型。
+
+看看 BaseContract 基础契约类写了什么：
+```java
+public interface BaseContract {
+    interface View {
+        void showError(String msg);
+
+        void complete();
+
+        void showProgressUI(boolean isShow);
+    }
+
+    interface Presenter<V> {
+        void attachView(Context context, V view);
+
+        void detachView();
+
+        boolean isAttachView();
+
+        void onCreatePresenter(@Nullable Bundle savedState);
+
+        void onDestroyPresenter();
+
+        void onSaveInstanceState(Bundle outState);
+    }
+}
+```
+其实就是根据自己实际需要定义了一些公共的方法，其中 attachView 和 detachView 应该都要有的了。
+
+编写一个 BasePresenter:
+
+```java
+public class BasePresenter <V extends BaseContract.View> implements BaseContract.Presenter<V> {
+
+    protected Context mContext;
+    protected V mView;
+
+    protected void onCleared() {
+    }
+
+    @Override
+    public void attachView(Context context, V view) {
+        this.mContext = context;
+        this.mView = view;
+    }
+
+    @Override
+    public void detachView() {
+        this.mView = null;
+    }
+
+    @Override
+    public boolean isAttachView() {
+        return this.mView != null;
+    }
+
+    @Override
+    public void onCreatePresenter(@Nullable Bundle savedState) {
+    }
+
+    @Override
+    public void onDestroyPresenter() {
+        this.mContext = null;
+        detachView();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+    }
+}
+```
+BasePresenter 可以根据自己需要实现一些公共的操作，比如数据绑定和解绑，生命周期绑定，网络请求的取消等，上面是
+一个编写例子。
+
+编写 LoginPresenter:
+```java
+public class LoginPresenter extends BasePresenter<LoginContract.View> implements LoginContract.Presenter<LoginContract.View> {
+
+    @Override
+    public void login() {
+        mView.loginSuccess();
+    }
+}
+```
+首先要继承你编写的 BasePresenter，泛型中传入要绑定的 View，然后实现你定义的 Presenter 接口即可，
+在登陆方法中完成登陆后直接回调 loginSuccess 给 Activity 即可。
+
+整个使用过程就这样简单。
