@@ -97,4 +97,25 @@ public class PresenterProviders {
     public void attachView(Context context, BaseContract.View view) {
         mPresenterStore.attachView(context, view);
     }
+
+    public <P extends BaseContract.Presenter> P getPresenter(int index) {
+        CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
+        if (createPresenter == null) {
+            return null;
+        }
+        if (createPresenter.presenter().length == 0) {
+            return null;
+        }
+        if (index >= 0 && index < createPresenter.presenter().length) {
+            String key = createPresenter.presenter()[index].getCanonicalName();
+            BasePresenter presenter = mPresenterStore.get(key);
+            if (presenter != null) {
+                return (P) presenter;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
 }

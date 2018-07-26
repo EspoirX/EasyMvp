@@ -41,5 +41,8 @@ public class PresenterStore<P extends BasePresenter> {
         }
     }
 
+    public int getSize(){
+        return mMap.size();
+    }
 
 }
