@@ -5,6 +5,8 @@
 - 一个 Activity 可以绑定多个 Presenter，以达到最大的复用功能。
 - 采用注解的方式实现依赖注入，减少耦合。
 - 可以灵活管理生命周期。
+- 使用起来方便简单
+- 使用例子可以在项目中找到。
 
 ## 使用效果以及用法
 先看看使用后代码的效果吧，以 Activity 为例：
@@ -208,4 +210,107 @@ public class LoginPresenter extends BasePresenter<LoginContract.View> implements
 首先要继承你编写的 BasePresenter，泛型中传入要绑定的 View，然后实现你定义的 Presenter 接口即可，
 在登陆方法中完成登陆后直接回调 loginSuccess 给 Activity 即可。
 
-整个使用过程就这样简单。
+整个使用过程就这样简单，好了，下面简单分析一下具体实现：
+1. 关于注解的知识，可以看这篇文章，看完应该就懂了：[深入理解Java注解类型(@Annotation)](https://blog.csdn.net/javazejian/article/details/71860633)
+2. PresenterStore 类：
+这个类的主要作用就是将 Presenter 的实例存储起来，用的是 HashMap 实现：
+```java
+private static final String DEFAULT_KEY = "PresenterStore.DefaultKey";
+private final HashMap<String, P> mMap = new HashMap<>();
+
+public final void put(String key, P presenter) {
+    P oldPresenter = mMap.put(DEFAULT_KEY + ":" + key, presenter);
+    if (oldPresenter != null) {
+        oldPresenter.onCleared();
+    }
+}
+
+public final P get(String key) {
+    return mMap.get(DEFAULT_KEY + ":" + key);
+}
+
+public final void clear() {
+    for (P presenter : mMap.values()) {
+        presenter.onCleared();
+    }
+    mMap.clear();
+}
+```
+因为需要处理的是一个或多个 Presenter 对象，所以这样做的目的是为了可以统一管理和查找，所以 attachView 和 detachView 的真正实现也都在这里：
+```java
+public void attachView(Context context, BaseContract.View view) {
+    for (Map.Entry<String, P> entry : mMap.entrySet()) {
+        BasePresenter presenter = entry.getValue();
+        if (presenter != null) {
+            presenter.attachView(context, view);
+        }
+    }
+}
+
+public void detachView() {
+    for (Map.Entry<String, P> entry : mMap.entrySet()) {
+        BasePresenter presenter = entry.getValue();
+        if (presenter != null) {
+            presenter.detachView();
+        }
+    }
+}
+```
+当然其他一些 Presenter 的公共实现也可以这么做。
+
+3. 然后到了主要的 PresenterProviders 类
+这个类主要看几个方法，第一个 of() 方法：
+```java
+public <P extends BasePresenter> PresenterProviders of() {
+    CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
+    if (createPresenter != null) {
+        Class<P>[] classes = (Class<P>[]) createPresenter.presenter();
+        for (Class<P> clazz : classes) {
+            String canonicalName = clazz.getCanonicalName();
+            try {
+                mPresenterStore.put(canonicalName, clazz.newInstance());
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    return this;
+}
+```
+of() 方法主要的作用是解析 @CreatePresenter 注解，过程是这样的：首先获取到注解上所有定义的 class 对象数组 classes，然后
+循环，取它们的 canonicalName 作为 key ,调用 newInstance 方法实例化后作为 value 存入上面说到的 HasMap 中。
+
+接下来是 get 方法：
+```java
+public <P extends BasePresenter> PresenterProviders get() {
+    for (Field field : mContext.getClass().getDeclaredFields()) {
+        //获取字段上的注解
+        Annotation[] anns = field.getDeclaredAnnotations();
+        if (anns.length < 1) {
+            continue;
+        }
+        if (anns[0] instanceof PresenterVariable) {
+            String canonicalName = field.getType().getName();
+            P presenterInstance = (P) mPresenterStore.get(canonicalName);
+            if (presenterInstance != null) {
+                try {
+                    field.setAccessible(true);
+                    field.set(mContext, presenterInstance);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    return this;
+}
+```
+get 方法主要的作用就是为将用 @PresenterVariable 注解标记的对象在 HashMap 中找到对应的实例，并赋值。过程是
+这样的，首先通过 getDeclaredFields 获取类上所以的变量的 Field，然后判断如果该变量有标记 @PresenterVariable
+ 注解的话，就取它的 Type 对应的 Name，这个 Name 的值是会与 canonicalName 一样的，所以就可以通过它作为 key
+  在 HashMap 中查找对应的实例，找到后通过 Field 的 set 方法给变量赋值。
+
+整个过程就完成了，是不是很简单。
+喜欢就给个 star 吧，欢迎留言提 Issues 和建议。
