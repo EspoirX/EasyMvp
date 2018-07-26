@@ -98,6 +98,10 @@ public class PresenterProviders {
         mPresenterStore.attachView(context, view);
     }
 
+    public void detachView() {
+        mPresenterStore.detachView();
+    }
+
     public <P extends BaseContract.Presenter> P getPresenter(int index) {
         CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
         if (createPresenter == null) {

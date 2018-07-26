@@ -41,8 +41,18 @@ public class PresenterStore<P extends BasePresenter> {
         }
     }
 
+    public void detachView() {
+        for (Map.Entry<String, P> entry : mMap.entrySet()) {
+            BasePresenter presenter = entry.getValue();
+            if (presenter != null) {
+                presenter.detachView();
+            }
+        }
+    }
+
     public int getSize(){
         return mMap.size();
     }
+
 
 }

@@ -48,4 +48,9 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mPresenterProviders.detachView();
+    }
 }
