@@ -1,6 +1,7 @@
 package com.lzx.easymvp.mvp;
 
 import android.content.Context;
+import android.os.Bundle;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +47,24 @@ public class PresenterStore<P extends BasePresenter> {
             BasePresenter presenter = entry.getValue();
             if (presenter != null) {
                 presenter.detachView();
+            }
+        }
+    }
+
+    public void onCreatePresenter(Bundle savedInstanceState){
+        for (Map.Entry<String, P> entry : mMap.entrySet()) {
+            BasePresenter presenter = entry.getValue();
+            if (presenter != null) {
+                presenter.onCreatePresenter(savedInstanceState);
+            }
+        }
+    }
+
+    public void onSaveInstanceState(Bundle outState) {
+        for (Map.Entry<String, P> entry : mMap.entrySet()) {
+            BasePresenter presenter = entry.getValue();
+            if (presenter != null) {
+                presenter.onSaveInstanceState(outState);
             }
         }
     }

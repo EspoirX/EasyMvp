@@ -3,6 +3,7 @@ package com.lzx.easymvp.mvp;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 
 import java.lang.annotation.Annotation;
@@ -100,6 +101,15 @@ public class PresenterProviders {
 
     public void detachView() {
         mPresenterStore.detachView();
+        mPresenterStore.clear();
+    }
+
+    public void onCreatePresenter(Bundle savedInstanceState) {
+        mPresenterStore.onCreatePresenter(savedInstanceState);
+    }
+
+    public void onSaveInstanceState(Bundle outState) {
+        mPresenterStore.onSaveInstanceState(outState);
     }
 
     public <P extends BaseContract.Presenter> P getPresenter(int index) {

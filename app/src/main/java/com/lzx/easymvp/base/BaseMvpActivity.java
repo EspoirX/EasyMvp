@@ -1,6 +1,7 @@
 package com.lzx.easymvp.base;
 
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 
 import com.lzx.easymvp.mvp.BaseContract;
@@ -16,8 +17,19 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
         super.onCreate(savedInstanceState);
         setContentView(getContentView());
         mPresenterProviders = PresenterProviders.inject(this);
-        mPresenterProviders.of().get().attachView(this, this);
+        mPresenterProviders
+                .of()
+                .get()
+                .attachView(this, this);
+        mPresenterProviders.onCreatePresenter(savedInstanceState);
         init();
+    }
+
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mPresenterProviders.onSaveInstanceState(outState);
     }
 
     protected abstract int getContentView();

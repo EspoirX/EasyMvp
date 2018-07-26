@@ -1,4 +1,4 @@
-package com.lzx.easymvp.example;
+package com.lzx.easymvp.example.login;
 
 
 import com.lzx.easymvp.mvp.BasePresenter;
