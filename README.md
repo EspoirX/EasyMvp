@@ -13,23 +13,18 @@
 （以简单的登陆注册为例）
 
 - 单个 Presenter 的情况
-1. 定义好你的契约类如 LoginContract:
+1. 定义好你的 View 层接口方法并继承一个公共的 BaseMvpView 如 LoginView:
 ``` java
-public interface LoginContract {
-    interface Presenter<V> extends BaseContract.Presenter<V> {
-        void login();
-    }
-
-    interface View extends BaseContract.View {
-        void loginSuccess();
-    }
+public interface LoginView extends BaseMvpView {
+    void loginSuccess();
 }
-```
-2. 编写 LoginPresenter 继承 BasePresenter 并实现你的 Presenter 接口：
-```java
-public class LoginPresenter extends BasePresenter<LoginContract.View> implements LoginContract.Presenter<LoginContract.View> {
 
-    @Override
+
+```
+2. 编写 LoginPresenter 继承 BasePresenter 并实现你的 Presenter 功能方法：
+```java
+public class LoginPresenter extends BasePresenter<LoginView> {
+
     public void login() {
         mView.loginSuccess();
     }
@@ -39,7 +34,7 @@ public class LoginPresenter extends BasePresenter<LoginContract.View> implements
 3. Activity 继承 BaseMvpActivity 并实现你的 View 接口：
 ```java
 @CreatePresenter(presenter = LoginPresenter.class)
-public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginContract.View {
+public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginView {
 
     @Override
     protected int getContentView() {
@@ -56,13 +51,15 @@ public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements
         Log.i("ExampleActivity1", "登陆成功");
     }
 }
+
 ```
 其中在 Activity 中，Presenter 实例的获取方法可以有上面代码所示的通过 getPresenter 来获取，这种方法需要在 BaseMvpActivity 后面
 填入泛型参数你的 Presenter 实现类，比如上面所示的 LoginPresenter。
 除了这种方法，也可以通过注解的方式获取实例：
+
 ```java
 @CreatePresenter(presenter = LoginPresenter.class)
-public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.View {
+public class ExampleActivity3 extends BaseMvpActivity implements LoginView {
     @PresenterVariable
     private LoginPresenter mLoginPresenter;
 
@@ -86,7 +83,7 @@ public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.V
 如果不喜欢注解，还可以通过直接获取的方式获取：
 ```java
 @CreatePresenter(presenter = LoginPresenter.class)
-public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.View {
+public class ExampleActivity3 extends BaseMvpActivity implements LoginView {
 
     private LoginPresenter mLoginPresenter;
 
@@ -116,7 +113,7 @@ public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.V
 多个 Presenter 的情况前两个步骤跟上面一样，主要是在 Activity 绑定这边有些区别：
 ```java
 @CreatePresenter(presenter = {LoginPresenter.class, RegisterPresenter.class})
-public class ExampleActivity1 extends BaseMvpActivity implements LoginContract.View, RegisterContract.View {
+public class ExampleActivity1 extends BaseMvpActivity implements  LoginView, RegisterView  {
 
     @PresenterVariable
     private LoginPresenter mLoginPresenter;
@@ -170,45 +167,31 @@ public class ExampleActivity4 extends BaseMvpActivity {
 }
 ```
 
-## 编写 BasePresenter, BaseContract, BaseMvpActivity 等一些基础类
+## 编写 BasePresenter, BaseMvpView, BaseMvpActivity 等一些基础类
 
-上面例子中有用到 BasePresenter, BaseContract, BaseMvpActivity 等一些基础类，这里给出一种例子，用户可根据自己需要去编写。
+上面例子中有用到 BasePresenter, BaseMvpView, BaseMvpActivity 等一些基础类，这里给出一种例子，用户可根据自己需要去编写。
 
-- BaseContract
+- BaseMvpView
 
-BaseContract 是基础契约类：
+BaseMvpView 是基础的 View 层接口：
 ```java
-public interface BaseContract {
-    interface View {
-        void showError(String msg); //展示错误提示
+public interface BaseMvpView {
+    void showError(String msg);
 
-        void complete();  //操作完成，比如网络请求等
+    void complete();
 
-        void showProgressUI(boolean isShow); //展示 loading UI等
-    }
-
-    interface Presenter<V> {
-        void attachView(Context context, V view); //绑定View
-
-        void detachView(); //解绑View
-
-        boolean isAttachView(); //判断是否绑定View
-
-        void onCreatePresenter(@Nullable Bundle savedState); //Presenter创建后调用
-
-        void onDestroyPresenter();  //Presenter销毁后调用
-
-        void onSaveInstanceState(Bundle outState);  //跟 onSaveInstanceState 方法一样
-    }
+    void showProgressUI(boolean isShow);
 }
+
 ```
-可以看到就是定义了一些公共的接口方法。因为 Presenter 需要跟具体的 View 绑定，所以弄了个泛型。
+可以看到就是定义了一些公共的接口方法。其实这个接口可以不需要，但是一般为了方便，就写上吧。
 
 - BasePresenter
 
 BasePresenter 就是基础的 BasePresenter 了，作用也是实现一些公共的 Presenter 接口方法：
+
 ```java
-public class BasePresenter <V extends BaseContract.View> implements BaseContract.Presenter<V> {
+public class BasePresenter <V>  {
 
     protected Context mContext;
     protected V mView;
@@ -217,48 +200,41 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
 
     }
 
-    @Override
     public void attachView(Context context, V view) {
         this.mContext = context;
         this.mView = view;
     }
 
-    @Override
     public void detachView() {
         this.mView = null;
     }
 
-    @Override
     public boolean isAttachView() {
         return this.mView != null;
     }
 
-    @Override
     public void onCreatePresenter(@Nullable Bundle savedState) {
 
     }
 
-    @Override
     public void onDestroyPresenter() {
         this.mContext = null;
         detachView();
     }
 
-    @Override
     public void onSaveInstanceState(Bundle outState) {
 
     }
 }
 ```
 
-实现了 BaseContract.Presenter 接口，然后里面的一些方法看需要去实现，一般像 attachView，detachView ，isAttachView 等方法是一定要实现的，
-因为这些与生命周期绑定有关，可以做资源的赋值和释放等操作。
+里面实现一些公共的 Presenter 方法，一般像 attachView，detachView ，isAttachView 等方法是一定要实现的，因为这些与生命周期绑定有关，可以做资源的赋值和释放等操作。
 
 - BaseMvpActivity
 
 这个大家都知道，就是 Activity 的基类了，看看它的一种实现：
 ```java
-public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
+public abstract class BaseMvpActivity<P  extends BasePresenter> extends AppCompatActivity  implements BaseMvpView {
 
     private PresenterProviders mPresenterProviders;
     private PresenterDispatch mPresenterDispatch;
@@ -324,7 +300,7 @@ protected P getPresenter() {
 ```
 也只是调用了 PresenterProviders.getPresenter(int index) 方法而已。
 
-然后 BaseMvpActivity 实现了 BaseContract.View 接口，默认实现了一些公共方法，当你继承它的时候，需要可以重写他们。
+然后 BaseMvpActivity 实现了 BaseMvpView 接口，默认实现了一些公共方法，当你继承它的时候，需要可以重写他们。
 
 主要说一下 PresenterProviders，这个类的作用是解析用到的注解以及完成绑定和解绑 View 等一些公共的 Presenter 操作。
 
