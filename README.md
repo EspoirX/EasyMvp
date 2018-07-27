@@ -8,109 +8,13 @@
 - 使用起来方便简单
 - 使用例子可以在项目中找到。
 
-## 使用效果以及用法
-先看看使用后代码的效果吧，以 Activity 为例：
+## 使用方法
 
-```java
-@CreatePresenter(presenter = {LoginPresenter.class, RregisterPresenter.class})
-public class MainActivity extends BaseMvpActivity implements LoginContract.View, RregisterContract.View {
+（以简单的登陆注册为例）
 
-    @PresenterVariable
-    private LoginPresenter mLoginPresenter;
-    @PresenterVariable
-    private RregisterPresenter mRregisterPresenter;
-
-    @Override
-    protected int getContentView() {
-        return R.layout.activity_main;
-    }
-
-    @Override
-    public void init() {
-        mLoginPresenter.login();
-        mRregisterPresenter.register();
-    }
-
-    @Override
-    public void loginSuccess() {
-        Log.i("MainActivity", "登陆成功");
-    }
-
-    @Override
-    public void registerSuccess() {
-        Log.i("MainActivity", "注册成功");
-    }
-}
-```
-假如一个 Activity 中需要同时用到 LoginPresenter 和 RregisterPresenter 中的某些方法，可以看到只需要使用注解
-@CreatePresenter 依次传入它们的 class 对象，内部就会自动实例化，并且与 Activity 绑定，非常方便。然后在使用
-的时候，为了区分和调用各自的方法，可以为它们分别定义一个变量 mLoginPresenter 和 mRregisterPresenter，并且
-为它们加上 @PresenterVariable 注解，它们就会各自得到实例化后的对象，就可以直接使用了。
-
-下面来看看这个框架的使用方法吧（以上面代码为例）：
-- . 首先，项目里面一般会有一个 BaseActivity，所以，我们需要先定义一个 BaseMvpActivity，这是使用的第一步。
-这个框架比较关键的类是 PresenterProviders ,它管理着很多东西(在后面原理分析时会讲到)，首先在 onCreate
-方法中，我们先实例化 PresenterProviders：
-
-```java
-private PresenterProviders mPresenterProviders;
-
-@Override
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(getContentView());
-    mPresenterProviders = PresenterProviders.inject(this);
-    ...
-}
-```
-
-调用 inject 方法实例化，传入上下文，然后再绑定 Activity:
-
-```java
-@Override
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(getContentView());
-    mPresenterProviders = PresenterProviders.inject(this);
-    mPresenterProviders.of().get().attachView(this, this);
-}
-```
-
-链式调用 of() , get() , attachView 方法即可绑定。
-
-在 Activity 结束的时候解绑释放资源：
-
-```java
-@Override
-protected void onDestroy() {
-    super.onDestroy();
-    mPresenterProviders.detachView();
-}
-```
-
-调用 detachView 方法解绑。
-
-当我们只需要用到一个 Presenter 的时候，如果还像上面那样定义一个变量加注解的话，有点太麻烦了，所以可以
-定义一个 getPresenter 方法直接获取就可以：
-
-```java
-protected P getPresenter() {
-    return mPresenterProviders.getPresenter(0);
-}
-```
-
-看到其实是调用了 PresenterProviders 提供的 getPresenter 方法，传入的是下标参数，因为只有一个 Presenter,
-所以传 0 就可以了，事实上可以通过这种方式获取到所有 Presenter 实例，因为返回的是 P 泛型，所以 Activity 需要这样写：
-
-```java
-public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
-    ...
-}
-```
-
-- 第二步，编写契约类定义 Presenter 和 View 方法
-
-```java
+- 单个 Presenter 的情况
+1. 定义好你的契约类如 LoginContract:
+``` java
 public interface LoginContract {
     interface Presenter<V> extends BaseContract.Presenter<V> {
         void login();
@@ -121,39 +25,188 @@ public interface LoginContract {
     }
 }
 ```
-定义的 Presenter 和 View 接口必须要继承 BaseContract.Presenter 和 BaseContract.View，因为 Presenter
-还需要和对应的 View 绑定，所以定义的时候还需要像上面一样定义个泛型。
-
-看看 BaseContract 基础契约类写了什么：
+2. 编写 LoginPresenter 继承 BasePresenter 并实现你的 Presenter 接口：
 ```java
-public interface BaseContract {
-    interface View {
-        void showError(String msg);
+public class LoginPresenter extends BasePresenter<LoginContract.View> implements LoginContract.Presenter<LoginContract.View> {
 
-        void complete();
-
-        void showProgressUI(boolean isShow);
-    }
-
-    interface Presenter<V> {
-        void attachView(Context context, V view);
-
-        void detachView();
-
-        boolean isAttachView();
-
-        void onCreatePresenter(@Nullable Bundle savedState);
-
-        void onDestroyPresenter();
-
-        void onSaveInstanceState(Bundle outState);
+    @Override
+    public void login() {
+        mView.loginSuccess();
     }
 }
 ```
-其实就是根据自己实际需要定义了一些公共的方法，其中 attachView 和 detachView 应该都要有的了。
 
-编写一个 BasePresenter:
+3. Activity 基础 BaseMvpActivity 并实现你的 View 接口：
+```java
+@CreatePresenter(presenter = LoginPresenter.class)
+public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginContract.View {
 
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void init() {
+        getPresenter().login();
+    }
+
+    @Override
+    public void loginSuccess() {
+        Log.i("ExampleActivity1", "登陆成功");
+    }
+}
+```
+其中在 Activity 中，Presenter 实例的获取方法可以有上面代码所示的通过 getPresenter 来获取，这种方法需要在 BaseMvpActivity 后面
+填入泛型参数你的 Presenter 实现类，比如 BaseMvpActivity<LoginPresenter>。
+除了这种方法，也可以通过注解的方式获取实例：
+```java
+@CreatePresenter(presenter = LoginPresenter.class)
+public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.View {
+    @PresenterVariable
+    private LoginPresenter mLoginPresenter;
+
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void init() {
+        mLoginPresenter.login();
+    }
+
+    @Override
+    public void loginSuccess() {
+        Log.i("ExampleActivity1", "登陆成功");
+    }
+}
+```
+
+如果不喜欢注解，还可以通过直接获取的方式获取：
+```java
+@CreatePresenter(presenter = LoginPresenter.class)
+public class ExampleActivity3 extends BaseMvpActivity implements LoginContract.View {
+
+    private LoginPresenter mLoginPresenter;
+
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void init() {
+      mLoginPresenter = getPresenterProviders().getPresenter(0);
+      mLoginPresenter.login();
+    }
+
+    @Override
+    public void loginSuccess() {
+        Log.i("ExampleActivity1", "登陆成功");
+    }
+}
+```
+通过 getPresenterProviders().getPresenter(int index) 方法获取，传入的参数是你通过 @CreatePresenter 注解传入的 class 对象的
+数组下标，这里因为只有一个 Presenter, 所以传 0 即可。
+
+
+- 多个 Presenter 的情况
+
+多个 Presenter 的情况前两个步骤跟上面一样，主要是在 Activity 绑定这边有些区别：
+```java
+@CreatePresenter(presenter = {LoginPresenter.class, RegisterPresenter.class})
+public class ExampleActivity1 extends BaseMvpActivity implements LoginContract.View, RegisterContract.View {
+
+    @PresenterVariable
+    private LoginPresenter mLoginPresenter;
+    @PresenterVariable
+    private RegisterPresenter mRegisterPresenter;
+
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void init() {
+        //也可以通过这种方式去获取实例
+        //mLoginPresenter = getPresenterProviders().getPresenter(0);
+        //mRegisterPresenter = getPresenterProviders().getPresenter(1);
+
+        mLoginPresenter.login();
+        mRegisterPresenter.register();
+    }
+
+    @Override
+    public void loginSuccess() {
+        Log.i("ExampleActivity1", "登陆成功");
+    }
+
+    @Override
+    public void registerSuccess() {
+        Log.i("ExampleActivity1", "注册成功");
+    }
+}
+```
+如上所示，假如一个 Activity 中需要同时用到 LoginPresenter 和 RegisterPresenter 中的某些方法，只需要使用注解
+@CreatePresenter 依次传入它们的 class 对象即可完成绑定。同样地为了得到各个 Presenter 的实例，可以通过 @PresenterVariable
+注解去获取，当然如果不喜欢用注解，也可以通过 getPresenterProviders().getPresenter(int index) 方法去获取哦。
+
+- 不需要使用 Mvp 的情况
+
+并不是所有地方都需要用到 Mvp，当不需要用的时候，其实也没什么特别，就正常用就行：
+```java
+public class ExampleActivity4 extends BaseMvpActivity {
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void init() {
+
+    }
+}
+```
+
+## 编写 BasePresenter, BaseContract, BaseMvpActivity 等一些基础类
+
+上面例子中有用到 BasePresenter, BaseContract, BaseMvpActivity 等一些基础类，这里给出一种例子，用户可根据自己需要去编写。
+
+- BaseContract
+
+BaseContract 是基础契约类：
+```java
+public interface BaseContract {
+    interface View {
+        void showError(String msg); //展示错误提示
+
+        void complete();  //操作完成，比如网络请求等
+
+        void showProgressUI(boolean isShow); //展示 loading UI等
+    }
+
+    interface Presenter<V> {
+        void attachView(Context context, V view); //绑定View
+
+        void detachView(); //解绑View
+
+        boolean isAttachView(); //判断是否绑定View
+
+        void onCreatePresenter(@Nullable Bundle savedState); //Presenter创建后调用
+
+        void onDestroyPresenter();  //Presenter销毁后调用
+
+        void onSaveInstanceState(Bundle outState);  //跟 onSaveInstanceState 方法一样
+    }
+}
+```
+可以看到就是定义了一些公共的接口方法。因为 Presenter 需要跟具体的 View 绑定，所以弄了个泛型。
+
+- BasePresenter
+
+BasePresenter 就是基础的 BasePresenter 了，作用也是实现一些公共的 Presenter 接口方法：
 ```java
 public class BasePresenter <V extends BaseContract.View> implements BaseContract.Presenter<V> {
 
@@ -161,6 +214,7 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
     protected V mView;
 
     protected void onCleared() {
+
     }
 
     @Override
@@ -181,6 +235,7 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
 
     @Override
     public void onCreatePresenter(@Nullable Bundle savedState) {
+
     }
 
     @Override
@@ -191,26 +246,95 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+
     }
 }
 ```
-BasePresenter 可以根据自己需要实现一些公共的操作，比如数据绑定和解绑，生命周期绑定，网络请求的取消等，上面是
-一个编写例子。
 
-编写 LoginPresenter:
+实现了 BaseContract.Presenter 接口，然后里面的一些方法看需要去实现，一般像 attachView，detachView ，isAttachView 等方法是一定要实现的，
+因为这些与生命周期绑定有关，可以做资源的赋值和释放等操作。
+
+- BaseMvpActivity
+
+这个大家都知道，就是 Activity 的基类了，看看它的一种实现：
 ```java
-public class LoginPresenter extends BasePresenter<LoginContract.View> implements LoginContract.Presenter<LoginContract.View> {
+public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
+
+    private PresenterProviders mPresenterProviders;
 
     @Override
-    public void login() {
-        mView.loginSuccess();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(getContentView());
+        mPresenterProviders = PresenterProviders.inject(this);
+        mPresenterProviders
+                .of()
+                .get()
+                .attachView(this, this);
+        mPresenterProviders.onCreatePresenter(savedInstanceState);
+        init();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mPresenterProviders.onSaveInstanceState(outState);
+    }
+
+    protected abstract int getContentView();
+
+    public abstract void init();
+
+    protected P getPresenter() {
+        return mPresenterProviders.getPresenter(0);
+    }
+
+    public PresenterProviders getPresenterProviders() {
+        return mPresenterProviders;
+    }
+
+    @Override
+    public void showError(String msg) {
+
+    }
+
+    @Override
+    public void complete() {
+
+    }
+
+    @Override
+    public void showProgressUI(boolean isShow) {
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mPresenterProviders.detachView();
     }
 }
 ```
-首先要继承你编写的 BasePresenter，泛型中传入要绑定的 View，然后实现你定义的 Presenter 接口即可，
-在登陆方法中完成登陆后直接回调 loginSuccess 给 Activity 即可。
 
-整个使用过程就这样简单，好了，下面简单分析一下具体实现：
+BaseMvpActivity<P extends BaseContract.Presenter> 这里泛型主要是为了一个 Presenter 的时候使用 getPresenter() 方法时用到的，代码如上面例子所示。可以看看 getPresenter() 的实现：
+```java
+protected P getPresenter() {
+    return mPresenterProviders.getPresenter(0);
+}
+```
+也只是调用了 PresenterProviders.getPresenter(int index) 方法而已。
+
+然后 BaseMvpActivity 实现了 BaseContract.View 接口，默认实现了一些公共方法，当你继承它的时候，需要可以重写他们。
+
+主要说一下 PresenterProviders，这个类的作用是解析用到的注解以及完成绑定和解绑 View 等一些公共的 Presenter 操作。
+
+1. 首先调用 inject 方法实例化，传入上下文参数。
+2. 通过调用 of() , get() , attachView() 方法即可完成 @CreatePresenter 注解解析，@PresenterVariable 注解解析以及 View 的绑定三个操作。
+3. 然后通过它的实例在 mPresenterProviders 在对应的方法回调中完成其他操作。
+
+
+下面简单分析一下 PresenterProviders 具体实现：
+
 1. 关于注解的知识，可以看这篇文章，看完应该就懂了：[深入理解Java注解类型(@Annotation)](https://blog.csdn.net/javazejian/article/details/71860633)
 2. PresenterStore 类：
 这个类的主要作用就是将 Presenter 的实例存储起来，用的是 HashMap 实现：

@@ -25,7 +25,6 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
         init();
     }
 
-
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);

@@ -28,7 +28,6 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
         this.mView = null;
     }
 
-
     @Override
     public boolean isAttachView() {
         return this.mView != null;
@@ -49,6 +48,4 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
     public void onSaveInstanceState(Bundle outState) {
 
     }
-
-
 }

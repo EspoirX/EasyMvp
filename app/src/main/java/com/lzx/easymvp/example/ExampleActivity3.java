@@ -23,6 +23,7 @@ public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements
 
     @Override
     public void init() {
+        getPresenter().login();
     }
 
     @Override

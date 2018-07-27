@@ -10,24 +10,24 @@ import android.support.annotation.Nullable;
  */
 public interface BaseContract {
     interface View {
-        void showError(String msg);
+        void showError(String msg); //展示错误提示
 
-        void complete();
+        void complete();  //操作完成，比如网络请求等
 
-        void showProgressUI(boolean isShow);
+        void showProgressUI(boolean isShow); //展示 loading UI等
     }
 
     interface Presenter<V> {
-        void attachView(Context context, V view);
+        void attachView(Context context, V view); //绑定View
 
-        void detachView();
+        void detachView(); //解绑View
 
-        boolean isAttachView();
+        boolean isAttachView(); //判断是否绑定View
 
-        void onCreatePresenter(@Nullable Bundle savedState);
+        void onCreatePresenter(@Nullable Bundle savedState); //Presenter创建后调用
 
-        void onDestroyPresenter();
+        void onDestroyPresenter();  //Presenter销毁后调用
 
-        void onSaveInstanceState(Bundle outState);
+        void onSaveInstanceState(Bundle outState);  //跟 onSaveInstanceState 方法一样
     }
 }
