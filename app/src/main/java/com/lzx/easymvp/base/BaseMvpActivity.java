@@ -1,15 +1,15 @@
 package com.lzx.easymvp.base;
 
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 
-import com.lzx.easymvp.mvp.BaseContract;
+import com.lzx.easymvp.mvp.BaseMvpView;
+import com.lzx.easymvp.mvp.BasePresenter;
 import com.lzx.easymvp.mvp.PresenterDispatch;
 import com.lzx.easymvp.mvp.PresenterProviders;
 
 
-public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
+public abstract class BaseMvpActivity<P  extends BasePresenter> extends AppCompatActivity  implements BaseMvpView {
 
     private PresenterProviders mPresenterProviders;
     private PresenterDispatch mPresenterDispatch;

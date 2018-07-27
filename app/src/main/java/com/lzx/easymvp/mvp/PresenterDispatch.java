@@ -18,7 +18,7 @@ public class PresenterDispatch {
         mProviders = providers;
     }
 
-    public <P extends BasePresenter> void attachView(Context context, BaseContract.View view) {
+    public <P extends BasePresenter> void attachView(Context context, Object view) {
         PresenterStore store = mProviders.getPresenterStore();
         HashMap<String, P> mMap = store.getMap();
         for (Map.Entry<String, P> entry : mMap.entrySet()) {

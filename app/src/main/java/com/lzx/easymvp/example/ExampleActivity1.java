@@ -4,10 +4,10 @@ import android.util.Log;
 
 import com.lzx.easymvp.R;
 import com.lzx.easymvp.base.BaseMvpActivity;
-import com.lzx.easymvp.example.login.LoginContract;
 import com.lzx.easymvp.example.login.LoginPresenter;
-import com.lzx.easymvp.example.register.RegisterContract;
+import com.lzx.easymvp.example.login.LoginView;
 import com.lzx.easymvp.example.register.RegisterPresenter;
+import com.lzx.easymvp.example.register.RegisterView;
 import com.lzx.easymvp.mvp.CreatePresenter;
 import com.lzx.easymvp.mvp.PresenterVariable;
 
@@ -18,7 +18,7 @@ import com.lzx.easymvp.mvp.PresenterVariable;
  * time:2018/7/26
  */
 @CreatePresenter(presenter = {LoginPresenter.class, RegisterPresenter.class})
-public class ExampleActivity1 extends BaseMvpActivity implements LoginContract.View, RegisterContract.View {
+public class ExampleActivity1 extends BaseMvpActivity implements LoginView, RegisterView {
 
     @PresenterVariable
     private LoginPresenter mLoginPresenter;

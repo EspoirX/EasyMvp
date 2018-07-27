@@ -4,17 +4,15 @@ import android.util.Log;
 
 import com.lzx.easymvp.R;
 import com.lzx.easymvp.base.BaseMvpActivity;
-import com.lzx.easymvp.example.login.LoginContract;
 import com.lzx.easymvp.example.login.LoginPresenter;
-import com.lzx.easymvp.example.register.RegisterContract;
-import com.lzx.easymvp.example.register.RegisterPresenter;
+import com.lzx.easymvp.example.login.LoginView;
 import com.lzx.easymvp.mvp.CreatePresenter;
 
 /**
  * 例子3：一个Presenter和使用 getPresenter 方法获取实例
  */
 @CreatePresenter(presenter = LoginPresenter.class)
-public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginContract.View {
+public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginView {
 
     @Override
     protected int getContentView() {

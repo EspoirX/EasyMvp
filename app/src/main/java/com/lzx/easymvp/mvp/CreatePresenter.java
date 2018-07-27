@@ -12,5 +12,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CreatePresenter {
-    Class<? extends BaseContract.Presenter>[] presenter() default {};
+    Class<?>[] presenter() default {};
 }

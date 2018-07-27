@@ -101,7 +101,7 @@ public class PresenterProviders {
     }
 
 
-    public <P extends BaseContract.Presenter> P getPresenter(int index) {
+    public <P extends BasePresenter> P getPresenter(int index) {
         CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
         if (createPresenter == null) {
             return null;
