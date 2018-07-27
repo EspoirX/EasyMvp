@@ -436,5 +436,5 @@ get 方法主要的作用就是为将用 @PresenterVariable 注解标记的对�
  注解的话，就取它的 Type 对应的 Name，这个 Name 的值是会与 canonicalName 一样的，所以就可以通过它作为 key
   在 HashMap 中查找对应的实例，找到后通过 Field 的 set 方法给变量赋值。
 
-整个过程就完成了，是不是很简单。
+整个过程就完成了，是不是很简单。在实际的运用过程中可以根据自己额需要做对应的修改。
 喜欢就给个 Star 吧，欢迎留言提 Issues 和建议。
