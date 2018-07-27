@@ -36,7 +36,7 @@ public class LoginPresenter extends BasePresenter<LoginContract.View> implements
 }
 ```
 
-3. Activity 基础 BaseMvpActivity 并实现你的 View 接口：
+3. Activity 继承 BaseMvpActivity 并实现你的 View 接口：
 ```java
 @CreatePresenter(presenter = LoginPresenter.class)
 public class ExampleActivity3 extends BaseMvpActivity<LoginPresenter> implements LoginContract.View {
