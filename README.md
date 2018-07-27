@@ -316,7 +316,7 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
 }
 ```
 
-BaseMvpActivity<P extends BaseContract.Presenter> 这里泛型主要是为了一个 Presenter 的时候使用 getPresenter() 方法时用到的，代码如上面例子所示。可以看看 getPresenter() 的实现：
+BaseMvpActivity 后面定义的泛型 P 主要是为了一个 Presenter 的时候使用 getPresenter() 方法时用到的，代码如上面例子所示。可以看看 getPresenter() 的实现：
 ```java
 protected P getPresenter() {
     return mPresenterProviders.getPresenter(0);
@@ -330,7 +330,7 @@ protected P getPresenter() {
 
 1. 首先调用 inject 方法实例化，传入上下文参数。
 2. 通过调用 of() , get() , attachView() 方法即可完成 @CreatePresenter 注解解析，@PresenterVariable 注解解析以及 View 的绑定三个操作。
-3. 然后通过它的实例在 mPresenterProviders 在对应的方法回调中完成其他操作。
+3. 然后通过它的实例 mPresenterProviders 在对应的方法回调中完成其他操作。
 
 
 下面简单分析一下 PresenterProviders 具体实现：
@@ -437,4 +437,4 @@ get 方法主要的作用就是为将用 @PresenterVariable 注解标记的对�
   在 HashMap 中查找对应的实例，找到后通过 Field 的 set 方法给变量赋值。
 
 整个过程就完成了，是不是很简单。
-喜欢就给个 star 吧，欢迎留言提 Issues 和建议。
+喜欢就给个 Star 吧，欢迎留言提 Issues 和建议。
