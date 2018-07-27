@@ -5,30 +5,31 @@ import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 
 import com.lzx.easymvp.mvp.BaseContract;
+import com.lzx.easymvp.mvp.PresenterDispatch;
 import com.lzx.easymvp.mvp.PresenterProviders;
 
 
 public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
 
     private PresenterProviders mPresenterProviders;
+    private PresenterDispatch mPresenterDispatch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getContentView());
         mPresenterProviders = PresenterProviders.inject(this);
-        mPresenterProviders
-                .of()
-                .get()
-                .attachView(this, this);
-        mPresenterProviders.onCreatePresenter(savedInstanceState);
+        mPresenterDispatch = new PresenterDispatch(mPresenterProviders);
+
+        mPresenterDispatch.attachView(this, this);
+        mPresenterDispatch.onCreatePresenter(savedInstanceState);
         init();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        mPresenterProviders.onSaveInstanceState(outState);
+        mPresenterDispatch.onSaveInstanceState(outState);
     }
 
     protected abstract int getContentView();
@@ -61,6 +62,6 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPresenterProviders.detachView();
+        mPresenterDispatch.detachView();
     }
 }

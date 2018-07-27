@@ -261,24 +261,24 @@ public class BasePresenter <V extends BaseContract.View> implements BaseContract
 public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends AppCompatActivity implements BaseContract.View {
 
     private PresenterProviders mPresenterProviders;
+    private PresenterDispatch mPresenterDispatch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getContentView());
         mPresenterProviders = PresenterProviders.inject(this);
-        mPresenterProviders
-                .of()
-                .get()
-                .attachView(this, this);
-        mPresenterProviders.onCreatePresenter(savedInstanceState);
+        mPresenterDispatch = new PresenterDispatch(mPresenterProviders);
+
+        mPresenterDispatch.attachView(this, this);
+        mPresenterDispatch.onCreatePresenter(savedInstanceState);
         init();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        mPresenterProviders.onSaveInstanceState(outState);
+        mPresenterDispatch.onSaveInstanceState(outState);
     }
 
     protected abstract int getContentView();
@@ -311,7 +311,7 @@ public abstract class BaseMvpActivity<P extends BaseContract.Presenter> extends 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPresenterProviders.detachView();
+        mPresenterDispatch.detachView();
     }
 }
 ```
@@ -329,13 +329,23 @@ protected P getPresenter() {
 主要说一下 PresenterProviders，这个类的作用是解析用到的注解以及完成绑定和解绑 View 等一些公共的 Presenter 操作。
 
 1. 首先调用 inject 方法实例化，传入上下文参数。
-2. 通过调用 of() , get() , attachView() 方法即可完成 @CreatePresenter 注解解析，@PresenterVariable 注解解析以及 View 的绑定三个操作。
-3. 然后通过它的实例 mPresenterProviders 在对应的方法回调中完成其他操作。
+2. 通过查看 inject 的实现，它里面调用了构造方法，构造方法再调用 resolveCreatePresenter 和 resolvePresenterVariable 方法来进行对注解 @CreatePresenter 和 @PresenterVariable 的解析。
+```java
+public static PresenterProviders inject(Context context) {
+    return new PresenterProviders(context);
+}
 
+private PresenterProviders(Context context) {
+    mContext = checkContext(context);
+    resolveCreatePresenter();
+    resolvePresenterVariable();
+}
+```
 
 下面简单分析一下 PresenterProviders 具体实现：
 
 1. 关于注解的知识，可以看这篇文章，看完应该就懂了：[深入理解Java注解类型(@Annotation)](https://blog.csdn.net/javazejian/article/details/71860633)
+
 2. PresenterStore 类：
 这个类的主要作用就是将 Presenter 的实例存储起来，用的是 HashMap 实现：
 ```java
@@ -360,32 +370,12 @@ public final void clear() {
     mMap.clear();
 }
 ```
-因为需要处理的是一个或多个 Presenter 对象，所以这样做的目的是为了可以统一管理和查找，所以 attachView 和 detachView 的真正实现也都在这里：
-```java
-public void attachView(Context context, BaseContract.View view) {
-    for (Map.Entry<String, P> entry : mMap.entrySet()) {
-        BasePresenter presenter = entry.getValue();
-        if (presenter != null) {
-            presenter.attachView(context, view);
-        }
-    }
-}
-
-public void detachView() {
-    for (Map.Entry<String, P> entry : mMap.entrySet()) {
-        BasePresenter presenter = entry.getValue();
-        if (presenter != null) {
-            presenter.detachView();
-        }
-    }
-}
-```
-当然其他一些 Presenter 的公共实现也可以这么做。
+因为需要处理的是一个或多个 Presenter 对象，所以这样做的目的是为了可以统一管理和查找。
 
 3. 然后到了主要的 PresenterProviders 类
-这个类主要看几个方法，第一个 of() 方法：
+这个类主要看几个方法，第一个 resolveCreatePresenter() 方法：
 ```java
-public <P extends BasePresenter> PresenterProviders of() {
+public <P extends BasePresenter> PresenterProviders resolveCreatePresenter() {
     CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
     if (createPresenter != null) {
         Class<P>[] classes = (Class<P>[]) createPresenter.presenter();
@@ -403,12 +393,12 @@ public <P extends BasePresenter> PresenterProviders of() {
     return this;
 }
 ```
-of() 方法主要的作用是解析 @CreatePresenter 注解，过程是这样的：首先获取到注解上所有定义的 class 对象数组 classes，然后
+resolveCreatePresenter() 方法主要的作用是解析 @CreatePresenter 注解，过程是这样的：首先获取到注解上所有定义的 class 对象数组 classes，然后
 循环，取它们的 canonicalName 作为 key ,调用 newInstance 方法实例化后作为 value 存入上面说到的 HasMap 中。
 
-接下来是 get 方法：
+接下来是 resolvePresenterVariable 方法：
 ```java
-public <P extends BasePresenter> PresenterProviders get() {
+public <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
     for (Field field : mContext.getClass().getDeclaredFields()) {
         //获取字段上的注解
         Annotation[] anns = field.getDeclaredAnnotations();
@@ -431,10 +421,49 @@ public <P extends BasePresenter> PresenterProviders get() {
     return this;
 }
 ```
-get 方法主要的作用就是为将用 @PresenterVariable 注解标记的对象在 HashMap 中找到对应的实例，并赋值。过程是
-这样的，首先通过 getDeclaredFields 获取类上所以的变量的 Field，然后判断如果该变量有标记 @PresenterVariable
- 注解的话，就取它的 Type 对应的 Name，这个 Name 的值是会与 canonicalName 一样的，所以就可以通过它作为 key
-  在 HashMap 中查找对应的实例，找到后通过 Field 的 set 方法给变量赋值。
+resolvePresenterVariable 方法主要的作用就是为将用 @PresenterVariable 注解标记的对象在 HashMap 中找到对应的实例，并赋值。过程是这样的，首先通过 getDeclaredFields 获取类上所以的变量的 Field，然后判断如果该变量有标记 @PresenterVariable
+ 注解的话，就取它的 Type 对应的 Name，这个 Name 的值是会与 canonicalName 一样的，所以就可以通过它作为 key 在 HashMap 中查找对应的实例，找到后通过 Field 的 set 方法给变量赋值。
+
+
+还有一个类 PresenterDispatch ：
+
+可以看到 attachView 和 detachView 等一些操作都是通过它来完成的，之所以需要这个类，是为了隔离开 PresenterProviders 和 PresenterStore，免得耦合。
+
+```java
+public class PresenterDispatch {
+    private PresenterProviders mProviders;
+
+    public PresenterDispatch(PresenterProviders providers) {
+        mProviders = providers;
+    }
+
+    public <P extends BasePresenter> void attachView(Context context, BaseContract.View view) {
+        PresenterStore store = mProviders.getPresenterStore();
+        HashMap<String, P> mMap = store.getMap();
+        for (Map.Entry<String, P> entry : mMap.entrySet()) {
+            P presenter = entry.getValue();
+            if (presenter != null) {
+                presenter.attachView(context, view);
+            }
+        }
+    }
+
+    public <P extends BasePresenter> void detachView() {
+        PresenterStore store = mProviders.getPresenterStore();
+        HashMap<String, P> mMap = store.getMap();
+        for (Map.Entry<String, P> entry : mMap.entrySet()) {
+            P presenter = entry.getValue();
+            if (presenter != null) {
+                presenter.detachView();
+            }
+        }
+    }
+    ...
+}
+```
+
+可以看到他里面是拿到了 PresenterProviders 对象，然后再拿到存储了 Presenter 实例的 HashMap，然后再进行操作。其他一些公共实现也可以这样做。
+
 
 整个过程就完成了，是不是很简单。在实际的运用过程中可以根据自己额需要做对应的修改。
 喜欢就给个 Star 吧，欢迎留言提 Issues 和建议。

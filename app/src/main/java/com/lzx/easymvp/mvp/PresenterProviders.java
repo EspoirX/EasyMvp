@@ -8,6 +8,9 @@ import android.support.v4.app.Fragment;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * create by lzx
@@ -15,7 +18,7 @@ import java.lang.reflect.Field;
  */
 public class PresenterProviders {
 
-    private PresenterStore mPresenterStore = new PresenterStore();
+    private PresenterStore mPresenterStore = new PresenterStore<>();
     private Context mContext;
 
     public static PresenterProviders inject(Context context) {
@@ -24,13 +27,14 @@ public class PresenterProviders {
 
     private PresenterProviders(Context context) {
         mContext = checkContext(context);
+        resolveCreatePresenter();
+        resolvePresenterVariable();
     }
 
     private static Application checkApplication(Activity activity) {
         Application application = activity.getApplication();
         if (application == null) {
-            throw new IllegalStateException("Your activity/fragment is not yet attached to "
-                    + "Application. You can't request ViewModel before onCreate call.");
+            throw new IllegalStateException("Your activity/fragment is not yet attached to Application. You can't request PresenterProviders before onCreate call.");
         }
         return application;
     }
@@ -38,7 +42,7 @@ public class PresenterProviders {
     private static Activity checkActivity(Fragment fragment) {
         Activity activity = fragment.getActivity();
         if (activity == null) {
-            throw new IllegalStateException("Can't create ViewModelProvider for detached fragment");
+            throw new IllegalStateException("Can't create PresenterProviders for detached fragment");
         }
         return activity;
     }
@@ -54,9 +58,10 @@ public class PresenterProviders {
         return resultContent;
     }
 
-    public <P extends BasePresenter> PresenterProviders of() {
+    private <P extends BasePresenter> PresenterProviders resolveCreatePresenter() {
         CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
         if (createPresenter != null) {
+
             Class<P>[] classes = (Class<P>[]) createPresenter.presenter();
             for (Class<P> clazz : classes) {
                 String canonicalName = clazz.getCanonicalName();
@@ -72,7 +77,7 @@ public class PresenterProviders {
         return this;
     }
 
-    public <P extends BasePresenter> PresenterProviders get() {
+    private <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
         for (Field field : mContext.getClass().getDeclaredFields()) {
             //获取字段上的注解
             Annotation[] anns = field.getDeclaredAnnotations();
@@ -95,22 +100,6 @@ public class PresenterProviders {
         return this;
     }
 
-    public void attachView(Context context, BaseContract.View view) {
-        mPresenterStore.attachView(context, view);
-    }
-
-    public void detachView() {
-        mPresenterStore.detachView();
-        mPresenterStore.clear();
-    }
-
-    public void onCreatePresenter(Bundle savedInstanceState) {
-        mPresenterStore.onCreatePresenter(savedInstanceState);
-    }
-
-    public void onSaveInstanceState(Bundle outState) {
-        mPresenterStore.onSaveInstanceState(outState);
-    }
 
     public <P extends BaseContract.Presenter> P getPresenter(int index) {
         CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
@@ -131,5 +120,9 @@ public class PresenterProviders {
         } else {
             return null;
         }
+    }
+
+    public PresenterStore getPresenterStore() {
+        return mPresenterStore;
     }
 }

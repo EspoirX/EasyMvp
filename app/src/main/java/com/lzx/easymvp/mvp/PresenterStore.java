@@ -13,7 +13,7 @@ import java.util.Map;
 public class PresenterStore<P extends BasePresenter> {
 
     private static final String DEFAULT_KEY = "PresenterStore.DefaultKey";
-    private final HashMap<String, P> mMap = new HashMap<>();
+    private  HashMap<String, P> mMap = new HashMap<>();
 
     public final void put(String key, P presenter) {
         P oldPresenter = mMap.put(DEFAULT_KEY + ":" + key, presenter);
@@ -33,45 +33,11 @@ public class PresenterStore<P extends BasePresenter> {
         mMap.clear();
     }
 
-    public void attachView(Context context, BaseContract.View view) {
-        for (Map.Entry<String, P> entry : mMap.entrySet()) {
-            BasePresenter presenter = entry.getValue();
-            if (presenter != null) {
-                presenter.attachView(context, view);
-            }
-        }
-    }
-
-    public void detachView() {
-        for (Map.Entry<String, P> entry : mMap.entrySet()) {
-            BasePresenter presenter = entry.getValue();
-            if (presenter != null) {
-                presenter.detachView();
-            }
-        }
-    }
-
-    public void onCreatePresenter(Bundle savedInstanceState){
-        for (Map.Entry<String, P> entry : mMap.entrySet()) {
-            BasePresenter presenter = entry.getValue();
-            if (presenter != null) {
-                presenter.onCreatePresenter(savedInstanceState);
-            }
-        }
-    }
-
-    public void onSaveInstanceState(Bundle outState) {
-        for (Map.Entry<String, P> entry : mMap.entrySet()) {
-            BasePresenter presenter = entry.getValue();
-            if (presenter != null) {
-                presenter.onSaveInstanceState(outState);
-            }
-        }
-    }
-
-    public int getSize(){
+    public int getSize() {
         return mMap.size();
     }
 
-
+    public HashMap<String, P> getMap() {
+        return mMap;
+    }
 }
