@@ -9,7 +9,6 @@ import com.lzx.easymvp.mvp.BasePresenter;
  */
 public class LoginPresenter extends BasePresenter<LoginView> {
 
-
     public void login() {
         mView.loginSuccess();
     }

@@ -22,7 +22,6 @@ public class BasePresenter <V>  {
         this.mView = view;
     }
 
-
     public void detachView() {
         this.mView = null;
     }
@@ -30,7 +29,6 @@ public class BasePresenter <V>  {
     public boolean isAttachView() {
         return this.mView != null;
     }
-
 
     public void onCreatePresenter(@Nullable Bundle savedState) {
 
