@@ -306,15 +306,30 @@ protected P getPresenter() {
 
 主要说一下 PresenterProviders，这个类的作用是解析用到的注解以及完成绑定和解绑 View 等一些公共的 Presenter 操作。
 
-1. 首先调用 inject 方法实例化，传入上下文参数。
+1. 首先调用 inject 方法实例化，传入当前对象（Activity 或者 Fragment）,传 this 即可。
 2. 通过查看 inject 的实现，它里面调用了构造方法，构造方法再调用 resolveCreatePresenter 和 resolvePresenterVariable 方法来进行对注解 @CreatePresenter 和 @PresenterVariable 的解析。
 ```java
-public static PresenterProviders inject(Context context) {
-    return new PresenterProviders(context);
+private Activity mActivity;
+private Fragment mFragment;
+private Class<?> mClass;
+    
+public static PresenterProviders inject(Activity activity) {
+    return new PresenterProviders(activity, null);
 }
 
-private PresenterProviders(Context context) {
-    mContext = checkContext(context);
+public static PresenterProviders inject(Fragment fragment) {
+    return new PresenterProviders(null, fragment);
+}
+
+private PresenterProviders(Activity activity, Fragment fragment) {
+    if (activity != null) {
+        this.mActivity = activity;
+        mClass = this.mActivity.getClass();
+    }
+    if (fragment != null) {
+        this.mFragment = fragment;
+        mClass = this.mFragment.getClass();
+    }
     resolveCreatePresenter();
     resolvePresenterVariable();
 }
@@ -353,9 +368,10 @@ public final void clear() {
 3. 然后到了主要的 PresenterProviders 类
 这个类主要看几个方法，第一个 resolveCreatePresenter() 方法：
 ```java
-public <P extends BasePresenter> PresenterProviders resolveCreatePresenter() {
-    CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
+private <P extends BasePresenter> PresenterProviders resolveCreatePresenter() {
+    CreatePresenter createPresenter = mClass.getAnnotation(CreatePresenter.class);
     if (createPresenter != null) {
+
         Class<P>[] classes = (Class<P>[]) createPresenter.presenter();
         for (Class<P> clazz : classes) {
             String canonicalName = clazz.getCanonicalName();
@@ -376,8 +392,8 @@ resolveCreatePresenter() 方法主要的作用是解析 @CreatePresenter 注解�
 
 接下来是 resolvePresenterVariable 方法：
 ```java
-public <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
-    for (Field field : mContext.getClass().getDeclaredFields()) {
+private <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
+    for (Field field : mClass.getDeclaredFields()) {
         //获取字段上的注解
         Annotation[] anns = field.getDeclaredAnnotations();
         if (anns.length < 1) {
@@ -389,7 +405,7 @@ public <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
             if (presenterInstance != null) {
                 try {
                     field.setAccessible(true);
-                    field.set(mContext, presenterInstance);
+                    field.set(mFragment != null ? mFragment : mActivity, presenterInstance);
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
