@@ -1,7 +1,8 @@
-package com.lzx.easymvp;
+package com.lzx.easymvp.example;
 
 import android.util.Log;
 
+import com.lzx.easymvp.R;
 import com.lzx.easymvp.base.BaseMvpFragment;
 import com.lzx.easymvp.example.login.LoginPresenter;
 import com.lzx.easymvp.example.login.LoginView;
