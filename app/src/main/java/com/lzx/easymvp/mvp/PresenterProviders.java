@@ -5,6 +5,7 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -19,14 +20,27 @@ import java.util.Objects;
 public class PresenterProviders {
 
     private PresenterStore mPresenterStore = new PresenterStore<>();
-    private Context mContext;
+    private Activity mActivity;
+    private Fragment mFragment;
+    private Class<?> mClass;
 
-    public static PresenterProviders inject(Context context) {
-        return new PresenterProviders(context);
+    public static PresenterProviders inject(Activity activity) {
+        return new PresenterProviders(activity, null);
     }
 
-    private PresenterProviders(Context context) {
-        mContext = checkContext(context);
+    public static PresenterProviders inject(Fragment fragment) {
+        return new PresenterProviders(null, fragment);
+    }
+
+    private PresenterProviders(Activity activity, Fragment fragment) {
+        if (activity != null) {
+            this.mActivity = activity;
+            mClass = this.mActivity.getClass();
+        }
+        if (fragment != null) {
+            this.mFragment = fragment;
+            mClass = this.mFragment.getClass();
+        }
         resolveCreatePresenter();
         resolvePresenterVariable();
     }
@@ -59,7 +73,7 @@ public class PresenterProviders {
     }
 
     private <P extends BasePresenter> PresenterProviders resolveCreatePresenter() {
-        CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
+        CreatePresenter createPresenter = mClass.getAnnotation(CreatePresenter.class);
         if (createPresenter != null) {
 
             Class<P>[] classes = (Class<P>[]) createPresenter.presenter();
@@ -78,7 +92,7 @@ public class PresenterProviders {
     }
 
     private <P extends BasePresenter> PresenterProviders resolvePresenterVariable() {
-        for (Field field : mContext.getClass().getDeclaredFields()) {
+        for (Field field : mClass.getDeclaredFields()) {
             //获取字段上的注解
             Annotation[] anns = field.getDeclaredAnnotations();
             if (anns.length < 1) {
@@ -90,7 +104,7 @@ public class PresenterProviders {
                 if (presenterInstance != null) {
                     try {
                         field.setAccessible(true);
-                        field.set(mContext, presenterInstance);
+                        field.set(mFragment != null ? mFragment : mActivity, presenterInstance);
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     }
@@ -102,7 +116,7 @@ public class PresenterProviders {
 
 
     public <P extends BasePresenter> P getPresenter(int index) {
-        CreatePresenter createPresenter = mContext.getClass().getAnnotation(CreatePresenter.class);
+        CreatePresenter createPresenter = mClass.getAnnotation(CreatePresenter.class);
         if (createPresenter == null) {
             return null;
         }

@@ -61,7 +61,7 @@ public abstract class BaseMvpFragment<P extends BasePresenter> extends Fragment 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mPresenterProviders = PresenterProviders.inject(getActivity());
+        mPresenterProviders = PresenterProviders.inject(this);
         mPresenterDispatch = new PresenterDispatch(mPresenterProviders);
 
         mPresenterDispatch.attachView(getActivity(), this);

@@ -9,7 +9,7 @@ import com.lzx.easymvp.mvp.PresenterDispatch;
 import com.lzx.easymvp.mvp.PresenterProviders;
 
 
-public abstract class BaseMvpActivity<P  extends BasePresenter> extends AppCompatActivity  implements BaseMvpView {
+public abstract class BaseMvpActivity<P extends BasePresenter> extends AppCompatActivity implements BaseMvpView {
 
     private PresenterProviders mPresenterProviders;
     private PresenterDispatch mPresenterDispatch;
