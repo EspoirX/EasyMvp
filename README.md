@@ -169,6 +169,21 @@ public class ExampleActivity4 extends BaseMvpActivity {
 }
 ```
 
+## 混淆配置
+
+```java
+-keep @packagename.PresenterVariable class * {*;}
+-keep @packagename.CreatePresenter class * {*;}
+-keep class * {
+   @packagename.PresenterVariable;
+   @cpackagename.CreatePresenter;
+}
+-keepclassmembers class ** {
+   @packagename.PresenterVariable;
+   @cpackagename.CreatePresenter;
+}
+```
+
 ## 编写 BasePresenter, BaseMvpView, BaseMvpActivity 等一些基础类
 
 上面例子中有用到 BasePresenter, BaseMvpView, BaseMvpActivity 等一些基础类，这里给出一种例子，用户可根据自己需要去编写。
