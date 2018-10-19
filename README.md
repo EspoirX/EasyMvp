@@ -172,17 +172,18 @@ public class ExampleActivity4 extends BaseMvpActivity {
 ## 混淆配置
 
 ```java
--keep @packagename.PresenterVariable class * {*;}
--keep @packagename.CreatePresenter class * {*;}
+-keep com.xxx.xxx.xxx.PresenterVariable class * {*;}
+-keep com.xxx.xxx.xxx.CreatePresenter class * {*;}
 -keep class * {
-   @packagename.PresenterVariable;
-   @cpackagename.CreatePresenter;
+   com.xxx.xxx.xxx.PresenterVariable <fields>;
+   com.xxx.xxx.xxx.CreatePresenter <fields>;
 }
 -keepclassmembers class ** {
-   @packagename.PresenterVariable;
-   @cpackagename.CreatePresenter;
+   com.xxx.xxx.xxx.PresenterVariable <methods>;
+   com.xxx.xxx.xxx.CreatePresenter <methods>;
 }
 ```
+谢谢 @yswheye 指点。
 
 ## 编写 BasePresenter, BaseMvpView, BaseMvpActivity 等一些基础类
 
